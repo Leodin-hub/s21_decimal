@@ -57,7 +57,6 @@ int s21_sub(s21_decimal value_1, s21_decimal value_2, s21_decimal *result) {
     if (n1 != n2) {
         sum_long(a, b, &temp);
     } else {
-        unsigned int ch = (is_equal_long(a, b) || greater_long(a, b));
         if (greater_long(a, b)) {
             sub_long(a, b, &temp);
         } else {
@@ -197,16 +196,22 @@ int s21_from_int_to_decimal(int src, s21_decimal *dst) {
 /* Функция конвертации.*/
 int s21_from_float_to_decimal(float src, s21_decimal *dst) {
     *dst = zeroz;
-    int neg = 0;
-    unsigned int src_c = *((unsigned int*) &src);
-    src < 0 ? neg = 1, src *= -1 : 0;
-    unsigned int src_b = *((unsigned int*) &src);
-    unsigned int temp = 0, expon = src_c & s21_EXPON;
-    int check = src < 1e-28f || src > powf(2, 96) || expon == s21_EXPON;
-    src >= MAX_F && !check ? float_n(src_b, dst) : !check ? float_y(&temp, dst, src) : 0;
-    temp <<= 16;
-    setbit(&temp, 31, neg);
-    dst->bits[3] = temp * (unsigned)!check;
+    int check = (fabs(src) < 1e-28f || fabs(src) > powf(2, 96)) || (isnan(src) || isinf(src));
+    if (!check) {
+        int neg = src < 0;
+        double src_d = (double)fabs(src);
+        unsigned int scale = 0;
+        for (; scale <= 28 && !((int)src_d / MAX_F) && (int)src_d != src_d; src_d *= 10, scale++) {}
+        src = (float)round(src_d);
+        for (; scale > 0 && !((int)src % 10); src /= 10, scale--) {}
+        unsigned int src_b = *((unsigned int *) &src);
+        int exp = expon_float(src);
+        setbit(&dst->bits[exp / 32], exp % 32, src != 0);
+        exp--;
+        for (int i = 22; i >= 0; exp--, i--)
+            checkbit(src_b, i) ? setbit(&dst->bits[exp / 32], exp % 32, 1) : 0;
+        dst->bits[3] = scale << 16 | neg << 31;
+    }
     return check;
 }
 
