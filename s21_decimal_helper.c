@@ -197,7 +197,7 @@ void round_exp_long(long_decimal *value, int exp, int n_exp) {
     long_decimal t = *value;
     mul_ten_long(&t, exp - n_exp);
     sub_long(a, t, &a);
-    div_ten_long(&a, exp - n_exp);
+    div_ten_long(&a, exp - n_exp - 1);
     a.bits[0] > 4 ? sum_long(*value, onesl, value) : 0;
 }
 
@@ -434,7 +434,7 @@ int div_r(s21_decimal a, s21_decimal b, s21_decimal *c, int flag) {
         }
     }
     mul_ten_long(&on, cz);
-    while (exp < 29 && !r && !res) {
+    while (exp < 30 && !r && !res) {
         if (greater_long(la, lb) || is_equal_long(la, lb)) {
             if (sd) {
                 exp += sd;
@@ -491,26 +491,7 @@ int div_r(s21_decimal a, s21_decimal b, s21_decimal *c, int flag) {
     return res;
 }
 
-// Функция перевода флоата с дробной частью
-void float_y(unsigned int *temp, s21_decimal *dst, float src) {
-    setbit(&dst->bits[0], 0, 1);
-    for (*temp = 0; *temp <= 28 && (int)src != src;)
-        (int)src != src ? *temp += 1, src *= 10 : 0;
-    unsigned int get = (int)src;
-    for (int i = 0; i < 31; i++)
-        setbit(&dst->bits[0], i, checkbit(get, i));
-}
-
-// Функция перевода флоата с большой целой частью, и без дробной
-void float_n(unsigned int src_b, s21_decimal *dst) {
-    unsigned int j = 30, h = 0;
-    for (int i = 7; i >= 0; j--, i--)
-        setbit(&h, i, checkbit(src_b, j));
-    h -= 127;
-    if (h < 96) {
-        setbit(&dst->bits[h / 32], h % 32, 1);
-        h--;
-        for (int z = 22; z >= 0; h--, z--)
-            setbit(&dst->bits[h / 32], h % 32, checkbit(src_b, z));
-    }
+int expon_float(float src) {
+    unsigned int src_b = *((unsigned int *) &src);
+    return ((src_b & s21_EXPON) >> 23) - 127;
 }
