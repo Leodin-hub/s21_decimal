@@ -453,7 +453,7 @@ int div_r(s21_decimal a, s21_decimal b, s21_decimal *c, int flag) {
                 sum_long(temp, ch, &temp);
                 ch = zerol;
             }
-            if (flag && !cz) {
+            if (flag && !cz && (!greater_long(la, lb) && !zeros_eq_long(la))) {
                 r = 1;
             } else if (!cz) {
                 mul_ten_long(&la, 1);
@@ -479,6 +479,7 @@ int div_r(s21_decimal a, s21_decimal b, s21_decimal *c, int flag) {
         *c = zero;
     } else if (!res && flag) {
         copy_decimal_to_long(c, &la, 1);
+        e1 < e2 ? div_ten(c, 3, e2 - e1) : 0;
         c->bits[3] = e1 << 16;
         setbit(&c->bits[3], 31, n1);
     } else if (!res && check_long(temp)) {
